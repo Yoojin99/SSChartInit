@@ -27,12 +27,13 @@ public class DoughnutChart: UIView {
     
     // MARK: - calculated
     private var contentView = UIView()
-    private var pieLayer = CAShapeLayer()
+    private var doughnutLayer = CAShapeLayer()
     
     private let outerCircleRadius: CGFloat
     private let innerCircleRadius: CGFloat
     private let doughnutCenterRadius: CGFloat
     private let doughnutWidth: CGFloat
+    private var didAnimation = false
     
     /// percenatge of prefix sum
     private var percentages: [ChartItemValuePercentage] = []
@@ -61,6 +62,35 @@ public class DoughnutChart: UIView {
     }
 }
 
+// MARK: - public
+extension DoughnutChart {
+    public func pauseAnimation() {
+        guard let mask = doughnutLayer.mask else {
+            return
+        }
+        
+        let pausedTime = mask.convertTime(CACurrentMediaTime(), from: nil)
+        mask.speed = 0
+        mask.timeOffset = pausedTime
+    }
+    
+    public func doAnimation() {
+        // ???: is it right to use async, put whole block in async?
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, let mask = self.doughnutLayer.mask else { return }
+            
+            if self.didAnimation { return }
+
+            let pausedTime = mask.timeOffset
+            mask.speed = 1
+            mask.timeOffset = 0
+            mask.beginTime = CACurrentMediaTime() - pausedTime
+            
+            self.didAnimation = true
+        }
+    }
+}
+
 // MARK: - private
 extension DoughnutChart {
     private func reload() {
@@ -78,8 +108,10 @@ extension DoughnutChart {
         contentView = UIView(frame: bounds)
         addSubview(contentView)
         
-        pieLayer = CAShapeLayer(layer: layer)
-        contentView.layer.addSublayer(pieLayer)
+        doughnutLayer = CAShapeLayer(layer: layer)
+        contentView.layer.addSublayer(doughnutLayer)
+        
+        didAnimation = false
     }
 }
 
@@ -116,13 +148,13 @@ extension DoughnutChart {
     private func drawPieces() {
         for (item, percentage) in zip(items, percentages) {
             let pieceOfPieLayer = createCircleLayer(radius: doughnutCenterRadius, startPercentage: percentage.start, endPercentage: percentage.end, borderWidth: doughnutWidth, color: item.color)
-            pieLayer.addSublayer(pieceOfPieLayer)
+            doughnutLayer.addSublayer(pieceOfPieLayer)
         }
     }
     
     private func maskChart() {
         let maskLayer = createCircleLayer(radius: doughnutCenterRadius, startPercentage: 0, endPercentage: 1, borderWidth: doughnutWidth, color: UIColor.black)
-        pieLayer.mask = maskLayer
+        doughnutLayer.mask = maskLayer
     }
 }
 
@@ -135,7 +167,7 @@ extension DoughnutChart {
         animation.toValue = 1
         animation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
         animation.isRemovedOnCompletion = true
-        pieLayer.mask?.add(animation, forKey: "circleAnimation")
+        doughnutLayer.mask?.add(animation, forKey: "circleAnimation")
     }
     
 }
