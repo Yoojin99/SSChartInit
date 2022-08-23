@@ -2,7 +2,7 @@
 //  DoughnutChart.swift
 //  SwiftChart
 //
-//  Created by NHN on 2022/08/17.
+//  Created by YJ on 2022/08/17.
 //
 
 import Foundation
