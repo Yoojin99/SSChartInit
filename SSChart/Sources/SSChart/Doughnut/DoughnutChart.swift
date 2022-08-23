@@ -60,11 +60,6 @@ public class DoughnutChart: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 }
-    
-//    override func layoutSubviews() {
-//        super.layoutSubviews()
-//        drawChart()
-//    }
 
 // MARK: - private
 extension DoughnutChart {
