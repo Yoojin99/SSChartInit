@@ -41,7 +41,7 @@ public class BarChart: UIView {
     private let groupLabelWidth: CGFloat
     private let itemLabelWidth: CGFloat
     private let descriptionLabelWidth: CGFloat
-    private let animationDelayDifference = 0.3
+    private let animationDelayDifference: Double
     
     // MARK: calculated
     private var showGroupLabel          = false
@@ -77,12 +77,13 @@ public class BarChart: UIView {
     ///   - groupLabelWidth: width of group text label. Default 52
     ///   - itemLabelWidth: width of item text label. Default 52
     ///   - descriptionLabelWidth:width of description text label. Default 52
-    public init(frame: CGRect, groupSpace: CGFloat = 10, itemSpace: CGFloat = 3, groupLabelWidth: CGFloat = 52, itemLabelWidth: CGFloat = 52, descriptionLabelWidth: CGFloat = 52) {
+    public init(frame: CGRect, groupSpace: CGFloat = 10, itemSpace: CGFloat = 3, groupLabelWidth: CGFloat = 52, itemLabelWidth: CGFloat = 52, descriptionLabelWidth: CGFloat = 52, animationDelayDifference: Double = 0.3) {
         self.groupSpace = groupSpace
         self.itemSpace = itemSpace
         self.groupLabelWidth = groupLabelWidth
         self.itemLabelWidth = itemLabelWidth
         self.descriptionLabelWidth = descriptionLabelWidth
+        self.animationDelayDifference = animationDelayDifference
         
         super.init(frame: frame)
     }
@@ -222,7 +223,7 @@ extension BarChart {
             addSubview(label)
         }
         
-        let bar = createBar(frame: CGRect(x: barX, y: point.topLeftPoint.y, width: barWidth, height: itemHeight), item: item, delay: Double(index) * 0.2)
+        let bar = createBar(frame: CGRect(x: barX, y: point.topLeftPoint.y, width: barWidth, height: itemHeight), item: item, delay: Double(index) * animationDelayDifference)
         addSubview(bar)
         bars.append(bar)
         
