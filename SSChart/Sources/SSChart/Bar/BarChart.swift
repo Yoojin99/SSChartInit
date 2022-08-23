@@ -95,8 +95,7 @@ public class BarChart: UIView {
 
 // MARK: - public
 extension BarChart {
-    /// pause bar animation
-    /// - Important: this should be called after setting items
+    /// pause bar animation. **This should be called after setting items**
     public func pauseAnimation() {
         for bar in bars {
             pauseBarAnimation(bar: bar)
