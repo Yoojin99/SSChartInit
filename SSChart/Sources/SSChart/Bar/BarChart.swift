@@ -18,8 +18,7 @@ import UIKit
  If there is a group that has label, groupLabel will be drawn.
  If there is an item that has label, itemLabel will be drawn. The same applies to descriptionLabel.
  */
-public class BarChart: UIView {
-    
+public class BarChart: UIView, Chart {
     /// cgPoints of each group for drawing
     private struct BarPoint {
         let topLeftPoint: CGPoint
@@ -41,7 +40,7 @@ public class BarChart: UIView {
     private let groupLabelWidth: CGFloat
     private let itemLabelWidth: CGFloat
     private let descriptionLabelWidth: CGFloat
-    private let animationDelayDifference: Double
+    private let animationDelayInterval: Double
     
     // MARK: calculated
     private var showGroupLabel          = false
@@ -68,7 +67,6 @@ public class BarChart: UIView {
     private var groupPoints: [BarPoint] = []
     private var bars: [UIView] = []
     
-    
     // MARK: - init
     /// - Parameters:
     ///   - frame: frame of chart
@@ -77,13 +75,14 @@ public class BarChart: UIView {
     ///   - groupLabelWidth: width of group text label. Default 52
     ///   - itemLabelWidth: width of item text label. Default 52
     ///   - descriptionLabelWidth:width of description text label. Default 52
-    public init(frame: CGRect, groupSpace: CGFloat = 10, itemSpace: CGFloat = 3, groupLabelWidth: CGFloat = 52, itemLabelWidth: CGFloat = 52, descriptionLabelWidth: CGFloat = 52, animationDelayDifference: Double = 0.3) {
+    ///   - animationDelayInterval : interval between animation start time for each bar. Default 0.3
+    public init(frame: CGRect, groupSpace: CGFloat = 10, itemSpace: CGFloat = 3, groupLabelWidth: CGFloat = 52, itemLabelWidth: CGFloat = 52, descriptionLabelWidth: CGFloat = 52, animationDelayInterval: Double = 0.3) {
         self.groupSpace = groupSpace
         self.itemSpace = itemSpace
         self.groupLabelWidth = groupLabelWidth
         self.itemLabelWidth = itemLabelWidth
         self.descriptionLabelWidth = descriptionLabelWidth
-        self.animationDelayDifference = animationDelayDifference
+        self.animationDelayInterval = animationDelayInterval
         
         super.init(frame: frame)
     }
@@ -95,22 +94,18 @@ public class BarChart: UIView {
 
 // MARK: - public
 extension BarChart {
-    /// pause bar animation. **This should be called after setting items**
     public func pauseAnimation() {
         for bar in bars {
-            pauseBarAnimation(bar: bar)
+            pauseAnimation(layer: bar.layer)
         }
     }
     
-    public func doAnimation() {
-        // ???: is it right to use async, put whole block in async?
+    public func resumeAnimation() {
         DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            
-            if self.didAnimation { return }
+            guard let self = self, !self.didAnimation else { return }
 
             for (index, bar) in self.bars.enumerated() {
-                self.resumeBarAnimation(bar: bar, delay: Double(index) * self.animationDelayDifference)
+                self.resumeAnimation(layer: bar.layer, delay: Double(index) * self.animationDelayInterval)
             }
             
             self.didAnimation = true
@@ -222,7 +217,7 @@ extension BarChart {
             addSubview(label)
         }
         
-        let bar = createBar(frame: CGRect(x: barX, y: point.topLeftPoint.y, width: barWidth, height: itemHeight), item: item, delay: Double(index) * animationDelayDifference)
+        let bar = createBar(frame: CGRect(x: barX, y: point.topLeftPoint.y, width: barWidth, height: itemHeight), item: item, delay: Double(index) * animationDelayInterval)
         addSubview(bar)
         bars.append(bar)
         
@@ -263,21 +258,5 @@ extension BarChart {
         view.layer.add(growAnimation, forKey: "growAnimation")
         
         return view
-    }
-}
-
-// MARK: animation
-extension BarChart {
-    private func pauseBarAnimation(bar: UIView) {
-        let pausedTime = bar.layer.convertTime(CACurrentMediaTime(), from: nil)
-        bar.layer.speed = 0
-        bar.layer.timeOffset = pausedTime
-    }
-    
-    private func resumeBarAnimation(bar: UIView, delay: Double) {
-        let pausedTime = bar.layer.timeOffset
-        bar.layer.speed = 1
-        bar.layer.timeOffset = 0
-        bar.layer.beginTime = CACurrentMediaTime() - pausedTime + delay
     }
 }
