@@ -45,7 +45,6 @@ public class BarChart: UIView, Chart {
     private let averageLineColor: UIColor
     
     // MARK: calculated
-//    private var averageLine
     private var showGroupLabel              = false
     private var showItemLabel               = false
     private var showDescriptionLabel        = false
