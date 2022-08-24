@@ -41,19 +41,25 @@ public class BarChart: UIView, Chart {
     private let itemLabelWidth: CGFloat
     private let descriptionLabelWidth: CGFloat
     private let animationDelayInterval: Double
+    private let showAverageLine: Bool
+    private let averageLineColor: UIColor
     
     // MARK: calculated
-    private var showGroupLabel          = false
-    private var showItemLabel           = false
-    private var showDescriptionLabel    = false
-    private var showAverageLine         = false
-    private var didAnimation            = false
+//    private var averageLine
+    private var showGroupLabel              = false
+    private var showItemLabel               = false
+    private var showDescriptionLabel        = false
+    private var didAnimation                = false
     
-    private var itemHeight: CGFloat     = 0
-    private var maxBarWidth: CGFloat    = 0
+    private var itemHeight: CGFloat         = 0
+    private var maxBarWidth: CGFloat        = 0
     
-    private var maxValue: CGFloat       = 0
-    private var averageValue: CGFloat   = 0
+    private var maxValue: CGFloat           = 0
+    
+    // MARK: average line
+    private var averageLineLayer = CAShapeLayer()
+    private var averageValue: CGFloat               = 0
+    private var averageLineAnimationDelay: Double    = 0.0
     
     // TODO: add margins
         
@@ -76,13 +82,17 @@ public class BarChart: UIView, Chart {
     ///   - itemLabelWidth: width of item text label. Default 52
     ///   - descriptionLabelWidth:width of description text label. Default 52
     ///   - animationDelayInterval : interval between animation start time for each bar. Default 0.3
-    public init(frame: CGRect, groupSpace: CGFloat = 10, itemSpace: CGFloat = 3, groupLabelWidth: CGFloat = 52, itemLabelWidth: CGFloat = 52, descriptionLabelWidth: CGFloat = 52, animationDelayInterval: Double = 0.3) {
+    ///   - showAverageLine : Default false
+    ///   - averageLineColor: color of average line. Default systemRed
+    public init(frame: CGRect, groupSpace: CGFloat = 10, itemSpace: CGFloat = 3, groupLabelWidth: CGFloat = 52, itemLabelWidth: CGFloat = 52, descriptionLabelWidth: CGFloat = 52, animationDelayInterval: Double = 0.3, showAverageLine: Bool = false, averageLineColor: UIColor = UIColor.systemRed) {
         self.groupSpace = groupSpace
         self.itemSpace = itemSpace
         self.groupLabelWidth = groupLabelWidth
         self.itemLabelWidth = itemLabelWidth
         self.descriptionLabelWidth = descriptionLabelWidth
         self.animationDelayInterval = animationDelayInterval
+        self.showAverageLine = showAverageLine
+        self.averageLineColor = averageLineColor
         
         super.init(frame: frame)
     }
@@ -98,6 +108,10 @@ extension BarChart {
         for bar in bars {
             pauseAnimation(layer: bar.layer)
         }
+        
+        if showAverageLine {
+            pauseAnimation(layer: averageLineLayer)
+        }
     }
     
     public func resumeAnimation() {
@@ -106,6 +120,10 @@ extension BarChart {
 
             for (index, bar) in self.bars.enumerated() {
                 self.resumeAnimation(layer: bar.layer, delay: Double(index) * self.animationDelayInterval)
+            }
+            
+            if self.showAverageLine {
+                self.resumeAnimation(layer: self.averageLineLayer, delay: self.averageLineAnimationDelay)
             }
             
             self.didAnimation = true
@@ -129,7 +147,6 @@ extension BarChart {
         showGroupLabel = false
         showItemLabel = false
         showDescriptionLabel = false
-        showAverageLine = false
         didAnimation = false
     }
     
@@ -137,10 +154,12 @@ extension BarChart {
         let groupCount = items.count
         var itemCount: Int = 0
         var totalValue: CGFloat = 0
+        var maxItemCountInGroup = 0
         
         for group in items {
             showGroupLabel = showGroupLabel || group.label != nil
             itemCount += group.items.count
+            maxItemCountInGroup = max(maxItemCountInGroup, group.items.count)
             
             for item in group.items {
                 showItemLabel = showItemLabel || item.label != nil
@@ -155,6 +174,7 @@ extension BarChart {
         let itemSpaceCount = itemCount - groupCount
         let totalSpace = (groupSpace * CGFloat(groupSpaceCount)) + (itemSpace * CGFloat(itemSpaceCount))
         itemHeight = (frame.height - totalSpace) / CGFloat(itemCount)
+        averageLineAnimationDelay = Double(maxItemCountInGroup-1) * animationDelayInterval + 1
         
         maxBarWidth = frame.width
         if showGroupLabel { maxBarWidth -= groupLabelWidth }
@@ -184,6 +204,20 @@ extension BarChart {
         for (groupIndex, group) in items.enumerated() {
             drawGroup(group, at: groupPoints[groupIndex])
         }
+        
+        if showAverageLine {
+            drawAverageLine()
+        }
+    }
+    
+    private func drawAverageLine() {
+        var xPos: CGFloat = maxBarWidth * (averageValue / maxValue)
+        
+        if showGroupLabel { xPos += groupLabelWidth }
+        if showItemLabel { xPos += itemLabelWidth }
+        
+        averageLineLayer = createDashLine(xPos: xPos)
+        layer.addSublayer(averageLineLayer)
     }
     
     private func drawGroup(_ group: BarChartGroupItem, at point: BarPoint) {
@@ -254,9 +288,32 @@ extension BarChart {
 
         view.layer.anchorPoint = CGPoint(x: 0, y: 0)
         view.frame = CGRect(x: frame.origin.x, y: frame.origin.y, width: 0, height: frame.height)
-        
         view.layer.add(growAnimation, forKey: "growAnimation")
         
         return view
+    }
+    
+    private func createDashLine(xPos: CGFloat) -> CAShapeLayer {
+        let shapeLayer = CAShapeLayer()
+        shapeLayer.strokeColor = averageLineColor.cgColor
+        shapeLayer.lineWidth = 2
+        shapeLayer.lineDashPattern = [3,3]
+        shapeLayer.opacity = 0
+        
+        let path = CGMutablePath()
+        path.addLines(between: [CGPoint(x: xPos, y: 0), CGPoint(x: xPos, y: frame.height)])
+        shapeLayer.path = path
+        
+        let fadeInAnimation = CABasicAnimation(keyPath: "opacity")
+        fadeInAnimation.fromValue = 0.0
+        fadeInAnimation.toValue = 1.0
+        fadeInAnimation.duration = 1.2
+        fadeInAnimation.timingFunction = CAMediaTimingFunction(name: .easeOut)
+        fadeInAnimation.fillMode = .forwards
+        fadeInAnimation.isRemovedOnCompletion = false
+        fadeInAnimation.beginTime = CACurrentMediaTime() + averageLineAnimationDelay
+        shapeLayer.add(fadeInAnimation, forKey: "fadeIn")
+        
+        return shapeLayer
     }
 }
