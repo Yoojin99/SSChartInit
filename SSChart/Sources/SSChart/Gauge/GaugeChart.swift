@@ -10,7 +10,7 @@ import UIKit
 
 // FIXME: almost same as DoughnutChart. Consider adding protocol.
 
-public class GaugeChart: UIView {
+public class GaugeChart: UIView, Chart {
 
     // MARK: public
     // 유효하지 않은 값 / 새로 데이터 안 들어올 때 기본 회색 차트 노출하게 해야 함
@@ -35,14 +35,10 @@ public class GaugeChart: UIView {
     private let innerCircleRadius: CGFloat
     private let gaugeCenterRadius: CGFloat
     
+    private var didAnimation = false
+    
     /// percenatge of prefix sum
     private var percentages: [ChartItemValuePercentage] = []
-    
-    // MARK: - init
-    public override func layoutSubviews() {
-        super.layoutSubviews()
-        reload()
-    }
     
     // MARK: - init
     /// - Parameters:
@@ -66,6 +62,32 @@ public class GaugeChart: UIView {
     }
 }
 
+// MARK: - public
+extension GaugeChart {
+    public func pauseAnimation() {
+        guard let mask = gaugeLayer.mask else {
+            return
+        }
+        
+        pauseAnimation(layer: mask)
+    }
+    
+    public func resumeAnimation() {
+        // ???: is it right to use async, put whole block in async?
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self,
+                  let mask = self.gaugeLayer.mask,
+                  !self.didAnimation else { return }
+            
+            if self.didAnimation { return }
+
+            self.resumeAnimation(layer: mask, delay: 0)
+            
+            self.didAnimation = true
+        }
+    }
+}
+
 // MARK: - private
 extension GaugeChart {
     private func reload() {
@@ -83,6 +105,8 @@ extension GaugeChart {
         
         gaugeLayer = CAShapeLayer(layer: layer)
         contentView.layer.addSublayer(gaugeLayer)
+        
+        didAnimation = false
     }
 }
 
