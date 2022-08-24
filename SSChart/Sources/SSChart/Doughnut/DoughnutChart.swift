@@ -8,7 +8,7 @@
 import Foundation
 import UIKit
 
-public class DoughnutChart: UIView {
+public class DoughnutChart: UIView, Chart {
     
     // MARK: public
     // 유효하지 않은 값 / 새로 데이터 안 들어올 때 기본 회색 차트 노출하게 해야 함
@@ -69,22 +69,19 @@ extension DoughnutChart {
             return
         }
         
-        let pausedTime = mask.convertTime(CACurrentMediaTime(), from: nil)
-        mask.speed = 0
-        mask.timeOffset = pausedTime
+        pauseAnimation(layer: mask)
     }
     
-    public func doAnimation() {
+    public func resumeAnimation() {
         // ???: is it right to use async, put whole block in async?
         DispatchQueue.main.async { [weak self] in
-            guard let self = self, let mask = self.doughnutLayer.mask else { return }
+            guard let self = self,
+                  let mask = self.doughnutLayer.mask,
+                  !self.didAnimation else { return }
             
             if self.didAnimation { return }
 
-            let pausedTime = mask.timeOffset
-            mask.speed = 1
-            mask.timeOffset = 0
-            mask.beginTime = CACurrentMediaTime() - pausedTime
+            self.resumeAnimation(layer: mask, delay: 0)
             
             self.didAnimation = true
         }
