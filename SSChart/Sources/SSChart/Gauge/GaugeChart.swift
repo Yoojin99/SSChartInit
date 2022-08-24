@@ -1,5 +1,5 @@
 //
-//  DoughnutChart.swift
+//  GaugeChart.swift
 //  SwiftChart
 //
 //  Created by YJ on 2022/08/17.
@@ -8,50 +8,50 @@
 import Foundation
 import UIKit
 
-public class DoughnutChart: UIView, Chart {
-    
+// FIXME: almost same as DoughnutChart. Consider adding protocol.
+
+public class GaugeChart: UIView, Chart {
+
     // MARK: public
     // 유효하지 않은 값 / 새로 데이터 안 들어올 때 기본 회색 차트 노출하게 해야 함
-    public var items: [DoughnutChartItem] = [
-        DoughnutChartItem(value: 55, color: .black),
-        DoughnutChartItem(value: 45, color: .systemGray)
+    public var items: [GaugeChartItem] = [
+        GaugeChartItem(value: 55, color: .black),
+        GaugeChartItem(value: 45, color: .systemGray)
     ] {
         didSet {
-            // TODO: show default chart if empty
             reload()
         }
     }
     
     private var contentView = UIView()
-    private var doughnutLayer = CAShapeLayer()
+    private var gaugeLayer = CAShapeLayer()
     
     // MARK: - user custom
     private let animationDuration: Double
+    private let gaugeWidth: CGFloat
     
     // MARK: - calculated
     private let outerCircleRadius: CGFloat
     private let innerCircleRadius: CGFloat
-    private let doughnutCenterRadius: CGFloat
-    private let doughnutWidth: CGFloat
+    private let gaugeCenterRadius: CGFloat
+    
     private var didAnimation = false
     
     /// percenatge of prefix sum
     private var percentages: [ChartItemValuePercentage] = []
     
-    // TODO: turn on-off animation
-    // TODO: draw title for each pieces
-    
     // MARK: - init
     /// - Parameters:
     ///   - frame: frame of chart
+    ///   - gaugeWidth: width of gauge line. Default 15
     ///   - outerCircleRadiusRatio: Ratio of width to outer circle radius. Default 2
     ///   - innerCircleRadiusRatio: Ratio of width to innder circle radius. Default 6
     ///   - animationDuration: Default 1.0
-    public init(frame: CGRect, outerCircleRadiusRatio: CGFloat = 2, innerCircleRadiusRatio: CGFloat = 6, animationDuration: Double = 1.0) {
+    public init(frame: CGRect, gaugeWidth: CGFloat = 15, outerCircleRadiusRatio: CGFloat = 2, innerCircleRadiusRatio: CGFloat = 6, animationDuration: Double = 1.0) {
         self.outerCircleRadius = frame.size.width / outerCircleRadiusRatio
         self.innerCircleRadius = frame.size.width / innerCircleRadiusRatio
-        self.doughnutCenterRadius = (outerCircleRadius + innerCircleRadius) / 2
-        self.doughnutWidth = outerCircleRadius - innerCircleRadius
+        self.gaugeCenterRadius = (outerCircleRadius + innerCircleRadius) / 2
+        self.gaugeWidth = gaugeWidth
         self.animationDuration = animationDuration
         
         super.init(frame: frame)
@@ -63,9 +63,9 @@ public class DoughnutChart: UIView, Chart {
 }
 
 // MARK: - public
-extension DoughnutChart {
+extension GaugeChart {
     public func pauseAnimation() {
-        guard let mask = doughnutLayer.mask else {
+        guard let mask = gaugeLayer.mask else {
             return
         }
         
@@ -76,7 +76,7 @@ extension DoughnutChart {
         // ???: is it right to use async, put whole block in async?
         DispatchQueue.main.async { [weak self] in
             guard let self = self,
-                  let mask = self.doughnutLayer.mask,
+                  let mask = self.gaugeLayer.mask,
                   !self.didAnimation else { return }
             
             if self.didAnimation { return }
@@ -89,7 +89,7 @@ extension DoughnutChart {
 }
 
 // MARK: - private
-extension DoughnutChart {
+extension GaugeChart {
     private func reload() {
         reset()
         calculateChartData()
@@ -99,21 +99,20 @@ extension DoughnutChart {
     
     // MARK: - reset
     private func reset() {
-        percentages.removeAll()
-        
         contentView.removeFromSuperview()
         contentView = UIView(frame: bounds)
         addSubview(contentView)
         
-        doughnutLayer = CAShapeLayer(layer: layer)
-        contentView.layer.addSublayer(doughnutLayer)
+        gaugeLayer = CAShapeLayer(layer: layer)
+        contentView.layer.addSublayer(gaugeLayer)
         
         didAnimation = false
     }
 }
 
-// MARK: - data
-extension DoughnutChart {
+
+extension GaugeChart {
+    // MARK: - data
     private func calculateChartData() {
         calculatePercentages()
     }
@@ -136,27 +135,28 @@ extension DoughnutChart {
 }
 
 // MARK: - draw
-extension DoughnutChart {
+extension GaugeChart {
     private func drawChart() {
         drawPieces()
         maskChart()
     }
     
     private func drawPieces() {
-        for (item, percentage) in zip(items, percentages) {
-            let pieceOfPieLayer = createCircleLayer(radius: doughnutCenterRadius, startPercentage: percentage.start, endPercentage: percentage.end, borderWidth: doughnutWidth, color: item.color)
-            doughnutLayer.addSublayer(pieceOfPieLayer)
+        // draw from behind
+        for (item, percentage) in zip(items, percentages).reversed() {
+            let pieceOfPieLayer = createCircleLayer(radius: gaugeCenterRadius, startPercentage: percentage.start, endPercentage: percentage.end, borderWidth: gaugeWidth, color: item.color)
+            gaugeLayer.addSublayer(pieceOfPieLayer)
         }
     }
     
     private func maskChart() {
-        let maskLayer = createCircleLayer(radius: doughnutCenterRadius, startPercentage: 0, endPercentage: 1, borderWidth: doughnutWidth, color: UIColor.black)
-        doughnutLayer.mask = maskLayer
+        let maskLayer = createCircleLayer(radius: gaugeCenterRadius, startPercentage: 0, endPercentage: 1, borderWidth: gaugeWidth, color: UIColor.black)
+        gaugeLayer.mask = maskLayer
     }
 }
-
+    
 // MARK: - animation
-extension DoughnutChart {
+extension GaugeChart {
     private func addAnimation() {
         let animation = CABasicAnimation(keyPath: "strokeEnd")
         animation.duration = animationDuration
@@ -164,16 +164,15 @@ extension DoughnutChart {
         animation.toValue = 1
         animation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
         animation.isRemovedOnCompletion = true
-        doughnutLayer.mask?.add(animation, forKey: "circleAnimation")
+        gaugeLayer.mask?.add(animation, forKey: "circleAnimation")
     }
     
 }
 
-extension DoughnutChart {
+extension GaugeChart {
     private func createCircleLayer(radius: CGFloat, startPercentage: CGFloat, endPercentage: CGFloat, borderWidth: CGFloat, color: UIColor) -> CAShapeLayer {
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
-        let path = UIBezierPath(arcCenter: center, radius: radius, startAngle: -(CGFloat)(Double.pi/2), endAngle: CGFloat(Double.pi/2) * 3, clockwise: true)
-
+        let path = UIBezierPath(arcCenter: center, radius: radius, startAngle: -(CGFloat)(Double.pi), endAngle: 0, clockwise: true)
         
         let circle = CAShapeLayer(layer: layer)
         circle.strokeStart = startPercentage
@@ -182,6 +181,8 @@ extension DoughnutChart {
         circle.strokeColor = color.cgColor
         circle.lineWidth = borderWidth
         circle.path = path.cgPath
+        circle.lineCap = .round
+        
         return circle
     }
 }
