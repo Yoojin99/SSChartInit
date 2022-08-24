@@ -23,14 +23,14 @@ public class GaugeChart: UIView, Chart {
         }
     }
     
+    private var contentView = UIView()
+    private var gaugeLayer = CAShapeLayer()
+    
     // MARK: - user custom
     private let animationDuration: Double
     private let gaugeWidth: CGFloat
     
     // MARK: - calculated
-    private var contentView = UIView()
-    private var gaugeLayer = CAShapeLayer()
-    
     private let outerCircleRadius: CGFloat
     private let innerCircleRadius: CGFloat
     private let gaugeCenterRadius: CGFloat

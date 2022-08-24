@@ -22,13 +22,13 @@ public class DoughnutChart: UIView, Chart {
         }
     }
     
+    private var contentView = UIView()
+    private var doughnutLayer = CAShapeLayer()
+    
     // MARK: - user custom
     private let animationDuration: Double
     
     // MARK: - calculated
-    private var contentView = UIView()
-    private var doughnutLayer = CAShapeLayer()
-    
     private let outerCircleRadius: CGFloat
     private let innerCircleRadius: CGFloat
     private let doughnutCenterRadius: CGFloat
