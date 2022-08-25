@@ -21,11 +21,11 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages this package depends on.
         .target(
             name: "SSChart",
-            path: "SSChart/Sources",
-            dependencies: []),
+            dependencies: [],
+            path: "SSChart/Sources"),
         .testTarget(
             name: "SSChartTests",
-            path: "SSChart/Tests",
-            dependencies: ["SSChart"]),
+            dependencies: ["SSChart"],
+            path: "SSChart/Tests"),
     ]
 )
