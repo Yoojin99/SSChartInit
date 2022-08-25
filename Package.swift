@@ -22,8 +22,7 @@ let package = Package(
         .target(
             name: "SSChart",
             path: "SSChart/Sources",
-            dependencies: [],
-        ),
+            dependencies: []),
         .testTarget(
             name: "SSChartTests",
             path: "SSChart/Tests",
